@@ -164,11 +164,17 @@ void publish_camera_pose(Sophus::SE3f Tcw_SE3f, ros::Time msg_time)
 
 void publish_tf_transform(Sophus::SE3f T_SE3f, string frame_id, string child_frame_id, ros::Time msg_time)
 {
-    tf::Transform tf_transform = SE3f_to_tfTransform(T_SE3f);
+    static tf2_ros::TransformBroadcaster tf_broadcaster;
+    
+    geometry_msgs::TransformStamped tf_msg;
+    tf_msg.header.stamp = msg_time;
+    tf_msg.header.frame_id = frame_id;
+    tf_msg.child_frame_id = child_frame_id;
 
-    static tf::TransformBroadcaster tf_broadcaster;
+    tf2::Transform tf_transform = SE3f_to_tfTransform(T_SE3f);
+    tf_msg.transform = tf2::toMsg(tf_transform);
 
-    tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, msg_time, frame_id, child_frame_id));
+    tf_broadcaster.sendTransform(tf_msg);
 }
 
 void publish_tracking_img(cv::Mat image, ros::Time msg_time)
@@ -347,14 +353,13 @@ sensor_msgs::PointCloud2 mappoint_to_pointcloud(std::vector<ORB_SLAM3::MapPoint*
 
     unsigned char *cloud_data_ptr = &(cloud.data[0]);
 
-
     for (unsigned int i = 0; i < cloud.width; i++)
     {
         if (map_points[i])
         {
             Eigen::Vector3d P3Dw = map_points[i]->GetWorldPos().cast<double>();
 
-            tf::Vector3 point_translation(P3Dw.x(), P3Dw.y(), P3Dw.z());
+            tf2::Vector3 point_translation(P3Dw.x(), P3Dw.y(), P3Dw.z());
 
             float data_array[num_channels] = {
                 point_translation.x(),
@@ -378,22 +383,22 @@ cv::Mat SE3f_to_cvMat(Sophus::SE3f T_SE3f)
     return T_cvmat;
 }
 
-tf::Transform SE3f_to_tfTransform(Sophus::SE3f T_SE3f)
+tf2::Transform SE3f_to_tfTransform(Sophus::SE3f T_SE3f)
 {
     Eigen::Matrix3f R_mat = T_SE3f.rotationMatrix();
     Eigen::Vector3f t_vec = T_SE3f.translation();
 
-    tf::Matrix3x3 R_tf(
+    tf2::Matrix3x3 R_tf(
         R_mat(0, 0), R_mat(0, 1), R_mat(0, 2),
         R_mat(1, 0), R_mat(1, 1), R_mat(1, 2),
         R_mat(2, 0), R_mat(2, 1), R_mat(2, 2)
     );
 
-    tf::Vector3 t_tf(
+    tf2::Vector3 t_tf(
         t_vec(0),
         t_vec(1),
         t_vec(2)
     );
 
-    return tf::Transform(R_tf, t_tf);
+    return tf2::Transform(R_tf, t_tf);
 }

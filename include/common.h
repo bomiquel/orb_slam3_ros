@@ -14,7 +14,10 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/eigen.hpp>
-#include <tf/transform_broadcaster.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <image_transport/image_transport.h>
 
 #include <std_msgs/Header.h>
@@ -61,5 +64,5 @@ bool save_map_srv(orb_slam3_ros::SaveMap::Request&, orb_slam3_ros::SaveMap::Resp
 bool save_traj_srv(orb_slam3_ros::SaveMap::Request&, orb_slam3_ros::SaveMap::Response&);
 
 cv::Mat SE3f_to_cvMat(Sophus::SE3f);
-tf::Transform SE3f_to_tfTransform(Sophus::SE3f);
+tf2::Transform SE3f_to_tfTransform(Sophus::SE3f);
 sensor_msgs::PointCloud2 mappoint_to_pointcloud(std::vector<ORB_SLAM3::MapPoint*>, ros::Time);
