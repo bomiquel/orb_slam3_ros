@@ -4,18 +4,20 @@
 *
 */
 
-#include "common.h"
+#include "custom_common.h"
 
 // Variables for ORB-SLAM3
 ORB_SLAM3::System* pSLAM;
 ORB_SLAM3::System::eSensor sensor_type = ORB_SLAM3::System::NOT_SET;
 
 // Variables for ROS
-std::string world_frame_id, cam_frame_id, imu_frame_id;
-ros::Publisher pose_pub, odom_pub, kf_markers_pub;
+std::string world_frame_id, base_link_frame_id, cam_frame_id, imu_frame_id;
+ros::Publisher robot_pose_pub, camera_pose_pub, odom_pub, kf_markers_pub;
 ros::Publisher tracked_mappoints_pub, all_mappoints_pub;
 ros::Publisher tracked_keypoints_pub;
+ros::ServiceClient initial_pose_client;
 image_transport::Publisher tracking_img_pub;
+tf2::Transform robot2camera, world2initial;
 
 //////////////////////////////////////////////////
 // Main functions
@@ -64,7 +66,9 @@ void setup_services(ros::NodeHandle &node_handler, std::string node_name)
 
 void setup_publishers(ros::NodeHandle &node_handler, image_transport::ImageTransport &image_transport, std::string node_name)
 {
-    pose_pub = node_handler.advertise<geometry_msgs::PoseStamped>(node_name + "/camera_pose", 1);
+    camera_pose_pub = node_handler.advertise<geometry_msgs::PoseStamped>(node_name + "/camera_pose", 1);
+
+    robot_pose_pub = node_handler.advertise<geometry_msgs::PoseStamped>(node_name + "/robot_pose", 1);
 
     tracked_mappoints_pub = node_handler.advertise<sensor_msgs::PointCloud2>(node_name + "/tracked_points", 1);
 
@@ -90,7 +94,7 @@ void publish_topics(ros::Time msg_time, Eigen::Vector3f Wbb)
         return;
     
     // Common topics
-    publish_camera_pose(Twc, msg_time);
+    publish_pose(Twc, msg_time);
     publish_tf_transform(Twc, world_frame_id, cam_frame_id, msg_time);
 
     publish_tracking_img(pSLAM->GetCurrentFrame(), msg_time);
@@ -144,22 +148,24 @@ void publish_body_odom(Sophus::SE3f Twb_SE3f, Eigen::Vector3f Vwb_E3f, Eigen::Ve
     odom_pub.publish(odom_msg);
 }
 
-void publish_camera_pose(Sophus::SE3f Tcw_SE3f, ros::Time msg_time)
+void publish_pose(Sophus::SE3f Twc_SE3f, ros::Time msg_time)
 {
+
     geometry_msgs::PoseStamped pose_msg;
     pose_msg.header.frame_id = world_frame_id;
     pose_msg.header.stamp = msg_time;
 
-    pose_msg.pose.position.x = Tcw_SE3f.translation().x();
-    pose_msg.pose.position.y = Tcw_SE3f.translation().y();
-    pose_msg.pose.position.z = Tcw_SE3f.translation().z();
+    tf2::Transform Twc_tf = SE3f_to_tfTransform(Twc_SE3f);
 
-    pose_msg.pose.orientation.w = Tcw_SE3f.unit_quaternion().coeffs().w();
-    pose_msg.pose.orientation.x = Tcw_SE3f.unit_quaternion().coeffs().x();
-    pose_msg.pose.orientation.y = Tcw_SE3f.unit_quaternion().coeffs().y();
-    pose_msg.pose.orientation.z = Tcw_SE3f.unit_quaternion().coeffs().z();
+    // {or}^T_{ci} = {or}^T_{r0} * {r}^T_{c} * {oc}^T_{ci}
+    tf2::Transform Twrc = world2initial * robot2camera * Twc_tf;
+    tf2::toMsg(Twrc, pose_msg.pose);
+    camera_pose_pub.publish(pose_msg);
 
-    pose_pub.publish(pose_msg);
+    // {or}^T_{ri} = {or}^T_{ci} * {c}^T_{r}
+    tf2::Transform Twrr = Twrc * robot2camera.inverse();
+    tf2::toMsg(Twrr, pose_msg.pose);
+    robot_pose_pub.publish(pose_msg);
 }
 
 void publish_tf_transform(Sophus::SE3f T_SE3f, string frame_id, string child_frame_id, ros::Time msg_time)
@@ -383,22 +389,42 @@ cv::Mat SE3f_to_cvMat(Sophus::SE3f T_SE3f)
     return T_cvmat;
 }
 
-tf2::Transform SE3f_to_tfTransform(Sophus::SE3f T_SE3f)
+tf2::Transform SE3f_to_tfTransform(const Sophus::SE3f& T) 
 {
-    Eigen::Matrix3f R_mat = T_SE3f.rotationMatrix();
-    Eigen::Vector3f t_vec = T_SE3f.translation();
-
-    tf2::Matrix3x3 R_tf(
-        R_mat(0, 0), R_mat(0, 1), R_mat(0, 2),
-        R_mat(1, 0), R_mat(1, 1), R_mat(1, 2),
-        R_mat(2, 0), R_mat(2, 1), R_mat(2, 2)
+    const Eigen::Quaternionf& q = T.unit_quaternion();
+    const Eigen::Vector3f& t = T.translation();
+    
+    return tf2::Transform(
+        tf2::Quaternion(
+            static_cast<tf2Scalar>(q.coeffs().x()), 
+            static_cast<tf2Scalar>(q.coeffs().y()), 
+            static_cast<tf2Scalar>(q.coeffs().z()), 
+            static_cast<tf2Scalar>(q.coeffs().w())
+        ), 
+        tf2::Vector3(
+            static_cast<tf2Scalar>(t.x()), 
+            static_cast<tf2Scalar>(t.y()), 
+            static_cast<tf2Scalar>(t.z())
+        )
     );
+}
 
-    tf2::Vector3 t_tf(
-        t_vec(0),
-        t_vec(1),
-        t_vec(2)
+Sophus::SE3f tfTransform_to_SE3f(tf2::Transform T) 
+{
+    const tf2::Quaternion& q = T.getRotation();
+    const tf2::Vector3& t = T.getOrigin();
+
+    return Sophus::SE3f(
+        Eigen::Quaternionf(
+            static_cast<float>(q.w()), 
+            static_cast<float>(q.x()), 
+            static_cast<float>(q.y()), 
+            static_cast<float>(q.z())
+        ), 
+        Eigen::Vector3f(
+            static_cast<float>(t.x()), 
+            static_cast<float>(t.y()),
+            static_cast<float>(t.z())
+        )
     );
-
-    return tf2::Transform(R_tf, t_tf);
 }

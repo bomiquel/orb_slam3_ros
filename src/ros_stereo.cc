@@ -4,16 +4,22 @@
 *
 */
 
-#include "common.h"
+#include "custom_common.h"
 
 using namespace std;
 
 class ImageGrabber
 {
 public:
-    ImageGrabber(){};
+    ImageGrabber(): initialised_{false}, tf_listener_{tf_buffer_} {};
 
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight);
+
+private:
+    bool initialised_;
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tf_listener_;
+
 };
 
 int main(int argc, char **argv)
@@ -42,6 +48,7 @@ int main(int argc, char **argv)
     } 
 
     node_handler.param<std::string>(node_name + "/world_frame_id", world_frame_id, "map");
+    node_handler.param<std::string>(node_name + "/base_link_frame_id", base_link_frame_id, "base_link");
     node_handler.param<std::string>(node_name + "/cam_frame_id", cam_frame_id, "camera");
 
     bool enable_pangolin;
@@ -53,6 +60,7 @@ int main(int argc, char **argv)
 
     ImageGrabber igb;
 
+    initial_pose_client = node_handler.serviceClient<orb_slam3_ros::GetTransform>("get_first_pose");
     message_filters::Subscriber<sensor_msgs::Image> sub_img_left(node_handler, "/camera/left/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> sub_img_right(node_handler, "/camera/right/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
@@ -75,8 +83,54 @@ int main(int argc, char **argv)
 // Functions
 //////////////////////////////////////////////////
 
-void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
+void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight)
 {
+    if (!initialised_)
+    {
+        robot2camera.setIdentity();
+        try
+        {
+            geometry_msgs::TransformStamped tf_msg = tf_buffer_.lookupTransform(base_link_frame_id, cam_frame_id, ros::Time(0));
+            tf2::fromMsg(tf_msg.transform, robot2camera);
+            initialised_ = true;
+        }
+        catch (const tf2::LookupException& e)
+        {
+            ROS_WARN_STREAM("[ORB-SLAM3-ROS->Initialiser:] TF listener exception: " << e.what());
+            ROS_WARN_STREAM("[ORB-SLAM3-ROS->Initialiser:] The transform between the robot and the camera has not been found, and therefore robot2camera is equal to the identity.");
+            initialised_ = true;
+        }
+        catch (const tf2::TransformException& e)
+        {
+            ROS_WARN_STREAM("[ORB-SLAM3-ROS->Initialiser:] TF listener exception: " << e.what());
+            initialised_ = false;
+        }
+        catch (...)
+        {
+            ROS_WARN("Unknowns exceptions");
+            initialised_ = false;
+        }
+
+        orb_slam3_ros::GetTransform srv;
+        if (initial_pose_client.call(srv))
+        {
+            tf2::fromMsg(srv.response.tf.transform, world2initial);
+            ROS_WARN_STREAM("[ORB-SLAM3-ROS->Initialiser:] GetTransform service call successful. The initial pose is as follows:" << std::endl <<
+                            "tx: " << world2initial.getOrigin().getX() << std::endl << 
+                            "ty: " << world2initial.getOrigin().getY() << std::endl << 
+                            "tz: " << world2initial.getOrigin().getZ() << std::endl << 
+                            "qx: " << world2initial.getRotation().getX() << std::endl << 
+                            "qy: " << world2initial.getRotation().getY() << std::endl << 
+                            "qz: " << world2initial.getRotation().getZ() << std::endl << 
+                            "qw: " << world2initial.getRotation().getW());
+        }
+        else
+        {
+            ROS_WARN_STREAM("[ORB-SLAM3-ROS->Initialiser:] Failed to call GetTransform service. The initial odometry will be assumed as the identity.");
+            world2initial.setIdentity();
+        }
+    }
+
     ros::Time msg_time = msgLeft->header.stamp;
 
     // Copy the ros image message to cv::Mat.
