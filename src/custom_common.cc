@@ -6,6 +6,8 @@
 
 #include "custom_common.h"
 
+std::string output_file;
+
 // Variables for ORB-SLAM3
 ORB_SLAM3::System* pSLAM;
 ORB_SLAM3::System::eSensor sensor_type = ORB_SLAM3::System::NOT_SET;
@@ -48,7 +50,7 @@ bool save_traj_srv(orb_slam3_ros::SaveMap::Request &req, orb_slam3_ros::SaveMap:
         std::cerr << e.what() << std::endl;
         res.success = false;
     } catch (...) {
-        std::cerr << "Unknows exeption" << std::endl;
+        std::cerr << "Unknows exception" << std::endl;
         res.success = false;
     }
 
@@ -57,6 +59,7 @@ bool save_traj_srv(orb_slam3_ros::SaveMap::Request &req, orb_slam3_ros::SaveMap:
 
     return res.success;
 }
+
 
 void setup_services(ros::NodeHandle &node_handler, std::string node_name)
 {
@@ -409,7 +412,7 @@ tf2::Transform SE3f_to_tfTransform(const Sophus::SE3f& T)
     );
 }
 
-Sophus::SE3f tfTransform_to_SE3f(tf2::Transform T) 
+Sophus::SE3f tfTransform_to_SE3f(const tf2::Transform& T) 
 {
     const tf2::Quaternion& q = T.getRotation();
     const tf2::Vector3& t = T.getOrigin();

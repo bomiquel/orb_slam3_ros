@@ -156,6 +156,10 @@ public:
     void SaveTrajectoryEuRoC(const string &filename);
     void SaveKeyFrameTrajectoryEuRoC(const string &filename);
 
+    void SaveKeyFrameTrajectoryCustom(const string &filename,
+                                      const Sophus::SE3f &Trc,
+                                      const Sophus::SE3f &Twri);
+
     void SaveTrajectoryEuRoC(const string &filename, Map* pMap);
     void SaveKeyFrameTrajectoryEuRoC(const string &filename, Map* pMap);
 

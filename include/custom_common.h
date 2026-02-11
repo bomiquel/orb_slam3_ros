@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <ros/time.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
@@ -37,6 +38,8 @@
 // ORB-SLAM3-specific libraries
 #include "System.h"
 #include "ImuTypes.h"
+
+extern std::string output_file;
 
 extern ORB_SLAM3::System* pSLAM;
 extern ORB_SLAM3::System::eSensor sensor_type;

@@ -47,9 +47,14 @@ int main(int argc, char **argv)
         return 1;
     } 
 
+    string working_path;
+    node_handler.param<std::string>(node_name + "/working_path", working_path, ros::package::getPath("orb_slam3_ros") + "/output/");
     node_handler.param<std::string>(node_name + "/world_frame_id", world_frame_id, "map");
     node_handler.param<std::string>(node_name + "/base_link_frame_id", base_link_frame_id, "base_link");
     node_handler.param<std::string>(node_name + "/cam_frame_id", cam_frame_id, "camera");
+    if (working_path[-1] != '/')
+        working_path += "/";
+    output_file = working_path + "keyframes_poses.txt";
 
     bool enable_pangolin;
     node_handler.param<bool>(node_name + "/enable_pangolin", enable_pangolin, true);
@@ -150,4 +155,6 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const s
     Sophus::SE3f Tcw = pSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, msg_time.toSec());
 
     publish_topics(msg_time);
+
+    pSLAM->SaveKeyFrameTrajectoryCustom(output_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
 }

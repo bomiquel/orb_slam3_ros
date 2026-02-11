@@ -1038,6 +1038,51 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map* pMap)
     f.close();
 }*/
 
+
+void System::SaveKeyFrameTrajectoryCustom(const string &filename,
+                                          const Sophus::SE3f &Trc,
+                                          const Sophus::SE3f &Twri)
+{
+    vector<Map*> vpMaps = mpAtlas->GetAllMaps();
+    Map* pBiggerMap;
+    int numMaxKFs = 0;
+    for(Map* pMap :vpMaps)
+    {
+        if(pMap && pMap->GetAllKeyFrames().size() > numMaxKFs)
+        {
+            numMaxKFs = pMap->GetAllKeyFrames().size();
+            pBiggerMap = pMap;
+        }
+    }
+
+    if(!pBiggerMap)
+    {
+        std::cout << "There is not a map!!" << std::endl;
+        return;
+    }
+
+    vector<KeyFrame*> vpKFs = pBiggerMap->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    ofstream f;
+    f.open(filename.c_str());
+    f << fixed << setprecision(9) << "timestamp,id,x,y,z,qx,qy,qz,qw" << endl;
+
+    for(size_t i=0; i<vpKFs.size(); i++)
+    {
+        KeyFrame* pKF = vpKFs[i];
+
+        Sophus::SE3f Twc = pKF->GetPoseInverse();
+        Sophus::SE3f Twrr = Twri * Trc * Twc * Trc.inverse();
+        Eigen::Quaternionf q = Twrr.unit_quaternion();
+        Eigen::Vector3f t = Twrr.translation();
+        f << 1e9*pKF->mTimeStamp << "," << i << "," << t(0) << "," << t(1) << "," << t(2) << "," << q.x() << "," << q.y() << "," << q.z() << "," << q.w() << endl;
+    }
+    f.close();
+}
+
 void System::SaveKeyFrameTrajectoryEuRoC(const string &filename)
 {
     cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;

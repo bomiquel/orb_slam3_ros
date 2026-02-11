@@ -1,10 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>orb_slam3_ros</name>
-  <version>0.0.1</version>
+  <version>1.1.1</version>
   <description>ORB SLAM3 ROS implementation.</description>
 
-  <maintainer email="thienhoangnguyen94@gmail.com">Thien Nguyen</maintainer>
+  <author email="thienhoangnguyen94@gmail.com">Thien Nguyen</author> <!-- Original -->
+  <author email="bo-miquel.nordfeldt@uib.eu">Bo Miquel Nordfeldt-Fiol</author> <!-- Modifications -->
+
+  <maintainer email="thienhoangnguyen94@gmail.com">Thien Nguyen</maintainer> <!-- Original -->
+  <maintainer email="bo-miquel.nordfeldt@uib.eu">Bo Miquel Nordfeldt-Fiol</maintainer> <!-- Modifications -->
 
   <license>BSD</license>
 
