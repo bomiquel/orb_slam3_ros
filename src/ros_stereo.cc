@@ -15,6 +15,8 @@ public:
 
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight);
 
+    void TimerCallback(const ros::WallTimerEvent& event);
+
 private:
     bool initialised_;
     tf2_ros::Buffer tf_buffer_;
@@ -54,7 +56,8 @@ int main(int argc, char **argv)
     node_handler.param<std::string>(node_name + "/cam_frame_id", cam_frame_id, "camera");
     if (working_path[-1] != '/')
         working_path += "/";
-    output_file = working_path + "keyframes_poses.txt";
+    keyframes_poses_file = working_path + "keyframes_poses.txt";
+    loop_closure_edges_file = working_path + "loop_closure_edges.txt";
 
     bool enable_pangolin;
     node_handler.param<bool>(node_name + "/enable_pangolin", enable_pangolin, true);
@@ -75,6 +78,8 @@ int main(int argc, char **argv)
     setup_publishers(node_handler, image_transport, node_name);
     setup_services(node_handler, node_name);
 
+    timer = node_handler.createWallTimer(ros::WallDuration(15.0), &ImageGrabber::TimerCallback, &igb);
+
     ros::spin();
 
     // Stop all threads
@@ -90,6 +95,8 @@ int main(int argc, char **argv)
 
 void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight)
 {
+    timer.stop();
+
     if (!initialised_)
     {
         robot2camera.setIdentity();
@@ -156,5 +163,16 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const s
 
     publish_topics(msg_time);
 
-    pSLAM->SaveKeyFrameTrajectoryCustom(output_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
+    pSLAM->SaveKeyFrameTrajectoryCustom(keyframes_poses_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
+    pSLAM->SaveLoopAndMergeEdgesCustom(loop_closure_edges_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
+
+    timer.start();
+}
+
+void ImageGrabber::TimerCallback(const ros::WallTimerEvent& event)
+{
+    ROS_WARN("Writting extra files!");
+
+    pSLAM->SaveKeyFrameTrajectoryCustom(keyframes_poses_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
+    pSLAM->SaveLoopAndMergeEdgesCustom(loop_closure_edges_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
 }

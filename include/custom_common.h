@@ -39,7 +39,7 @@
 #include "System.h"
 #include "ImuTypes.h"
 
-extern std::string output_file;
+extern std::string keyframes_poses_file, loop_closure_edges_file;
 
 extern ORB_SLAM3::System* pSLAM;
 extern ORB_SLAM3::System::eSensor sensor_type;
@@ -48,6 +48,7 @@ extern std::string world_frame_id, base_link_frame_id, cam_frame_id, imu_frame_i
 
 extern ros::Publisher robot_pose_pub, camera_pose_pub, odom_pub, kf_markers_pub;
 extern ros::Publisher tracked_mappoints_pub, all_mappoints_pub;
+extern ros::WallTimer timer;
 extern ros::ServiceClient initial_pose_client;
 extern image_transport::Publisher tracking_img_pub;
 extern tf2::Transform robot2camera, world2initial;

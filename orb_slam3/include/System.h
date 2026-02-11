@@ -160,6 +160,10 @@ public:
                                       const Sophus::SE3f &Trc,
                                       const Sophus::SE3f &Twri);
 
+    void SaveLoopAndMergeEdgesCustom(const string &filename,
+                                     const Sophus::SE3f &Trc,
+                                     const Sophus::SE3f &Twri);
+
     void SaveTrajectoryEuRoC(const string &filename, Map* pMap);
     void SaveKeyFrameTrajectoryEuRoC(const string &filename, Map* pMap);
 

@@ -6,7 +6,7 @@
 
 #include "custom_common.h"
 
-std::string output_file;
+std::string keyframes_poses_file, loop_closure_edges_file;
 
 // Variables for ORB-SLAM3
 ORB_SLAM3::System* pSLAM;
@@ -17,6 +17,7 @@ std::string world_frame_id, base_link_frame_id, cam_frame_id, imu_frame_id;
 ros::Publisher robot_pose_pub, camera_pose_pub, odom_pub, kf_markers_pub;
 ros::Publisher tracked_mappoints_pub, all_mappoints_pub;
 ros::Publisher tracked_keypoints_pub;
+ros::WallTimer timer;
 ros::ServiceClient initial_pose_client;
 image_transport::Publisher tracking_img_pub;
 tf2::Transform robot2camera, world2initial;
@@ -59,7 +60,6 @@ bool save_traj_srv(orb_slam3_ros::SaveMap::Request &req, orb_slam3_ros::SaveMap:
 
     return res.success;
 }
-
 
 void setup_services(ros::NodeHandle &node_handler, std::string node_name)
 {

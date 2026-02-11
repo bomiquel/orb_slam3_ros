@@ -16,10 +16,10 @@
     <arg name = "enable_decimate_x8" default = "false"/>
 
     <!-- CPU/MEM monitor flag -->
-    <arg name = "enable_cpu_monitor" default = "false"/>
+    <arg name = "enable_cpu_monitor" default = "true"/>
 
     <!-- Clock extension -->
-    <arg name = "enable_extra_clock" default = "false"/>
+    <arg name = "enable_extra_clock" default = "true"/>
 
     <!-- Bagfiles parameters -->
     <param name = "/use_sim_time"    value = "true"/>
@@ -128,7 +128,7 @@
     <!-- Extend clok -->
     <node pkg = "orb_slam3_ros" type = "clock_extender" name = "clock_extender" required = "true" output = "screen" if = "$(eval enable_extra_clock == true)">
         <param name = "extra_time"       value = "5"/>
-        <param name = "gap_threshold"    value = "100"/>
+        <param name = "gap_threshold"    value = "30"/>
         <param name = "watch_interval"   value = "5"/>
     </node>
 
