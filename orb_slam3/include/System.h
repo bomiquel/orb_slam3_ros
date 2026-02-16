@@ -138,7 +138,7 @@ public:
     // All threads will be requested to finish.
     // It waits until all threads have finished.
     // This function must be called before saving the trajectory.
-    void Shutdown();
+    void Shutdown(const string& working_path = "");
     bool isShutDown();
 
     // Save camera trajectory in the TUM RGB-D dataset format.

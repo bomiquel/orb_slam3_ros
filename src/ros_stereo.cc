@@ -83,7 +83,8 @@ int main(int argc, char **argv)
     ros::spin();
 
     // Stop all threads
-    pSLAM->Shutdown();
+    cout << "main working_path:" << working_path << endl;
+    pSLAM->Shutdown(working_path);
     ros::shutdown();
 
     return 0;
@@ -143,6 +144,10 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const s
         }
     }
 
+    double t_resize = 0;
+    double t_rect = 0;
+    double t_track = 0;
+
     ros::Time msg_time = msgLeft->header.stamp;
 
     // Copy the ros image message to cv::Mat.
@@ -158,8 +163,18 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const s
         return;
     }
 
+    #ifdef REGISTER_TIMES
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    #endif
+
     // ORB-SLAM3 runs in TrackStereo()
     Sophus::SE3f Tcw = pSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, msg_time.toSec());
+
+    #ifdef REGISTER_TIMES
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        t_track = t_resize + t_rect + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+        pSLAM->InsertTrackTime(t_track);
+    #endif
 
     publish_topics(msg_time);
 

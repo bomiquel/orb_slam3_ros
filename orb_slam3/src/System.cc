@@ -496,7 +496,7 @@ void System::ResetActiveMap()
     mbResetActiveMap = true;
 }
 
-void System::Shutdown()
+void System::Shutdown(const string& working_path)
 {
     {
         unique_lock<mutex> lock(mMutexReset);
@@ -539,7 +539,7 @@ void System::Shutdown()
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");*/
 
 #ifdef REGISTER_TIMES
-    mpTracker->PrintTimeStats();
+    mpTracker->PrintTimeStats(working_path);
 #endif
 
 
@@ -1121,7 +1121,8 @@ void System::SaveLoopAndMergeEdgesCustom(const string &o_path,
     for (size_t i = 0; i < vpMaps.size(); i++) 
     {
         Map* pMap = vpMaps[i];
-        if(!pMap) continue;
+        if(!pMap) 
+            continue;
 
         {
             unique_lock<mutex> lock(pMap->mMutexMapUpdate);
@@ -1130,7 +1131,8 @@ void System::SaveLoopAndMergeEdgesCustom(const string &o_path,
             for (size_t j = 0; j < vpKFs.size(); j++) 
             {
                 KeyFrame* pKF = vpKFs[j];
-                if (!pKF || pKF->isBad()) continue;
+                if (!pKF || pKF->isBad()) 
+                    continue;
 
                 set<KeyFrame*> sLoopEdges = pKF->GetLoopEdges();
                 set<KeyFrame*> sMergeEdges = pKF->GetMergeEdges();
