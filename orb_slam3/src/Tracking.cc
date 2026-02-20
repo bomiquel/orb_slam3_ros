@@ -278,13 +278,13 @@ void Tracking::TrackStats2File(const string& working_path)
 {
     ofstream f;
     f.open(working_path + "SessionInfo.txt");
-    f << fixed << "KFs,MPs,OpenCV version" << endl;
+    f << fixed << "#KFs,MPs,OpenCV version" << endl;
     f << mpAtlas->GetAllKeyFrames().size() << "," << mpAtlas->GetAllKeyFrames().size() << "," << CV_VERSION << endl;
     f.close();
 
     f.open(working_path + "KeyframeNum.txt");
-    f << fixed << "KFs" << endl;
-    f << mpAtlas->GetAllKeyFrames().size() << endl;
+    f << fixed << "#KFs," << endl;
+    f << mpAtlas->GetAllKeyFrames().size() << "," << endl;
     f.close();
 
     int loop_closure_num = 0;
@@ -310,8 +310,8 @@ void Tracking::TrackStats2File(const string& working_path)
         }
     }
     f.open(working_path + "LoopClosureNum.txt");
-    f << fixed << "LCs" << endl;
-    f << loop_closure_num << endl;
+    f << fixed << "#LCs," << endl;
+    f << loop_closure_num << "," << endl;
     f.close();
 
     f.open(working_path + "TrackingTimeStats.txt");

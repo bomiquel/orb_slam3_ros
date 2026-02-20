@@ -50,6 +50,8 @@ int main(int argc, char **argv)
     } 
 
     string working_path;
+    ROS_INFO_STREAM(node_name);
+    ROS_INFO_STREAM(node_name << "/working_path");
     node_handler.param<std::string>(node_name + "/working_path", working_path, ros::package::getPath("orb_slam3_ros") + "/output/");
     node_handler.param<std::string>(node_name + "/world_frame_id", world_frame_id, "map");
     node_handler.param<std::string>(node_name + "/base_link_frame_id", base_link_frame_id, "base_link");

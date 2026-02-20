@@ -101,7 +101,8 @@
         </include>
 
         <!-- ORB-SLAM3 -->
-        <node name = "orb_slam3" pkg = "orb_slam3_ros" type = "ros_stereo" output = "screen" if = "$(eval enable_decimate_x1 == true)">
+        <rosparam command = "load" file = "$(find orb_slam3_ros)/config/Stereo/offline_params.yaml"/>
+        <node name = "orb_slam3_ros" pkg = "orb_slam3_ros" type = "ros_stereo" output = "screen" if = "$(eval enable_decimate_x1 == true)">
             <remap from = "/camera/left/image_raw"     to = "$(arg camera_name)/$(arg master_camera_name)/image_rect_color"/>
             <remap from = "/camera/right/image_raw"    to = "$(arg camera_name)/$(arg slave_camera_name)/image_rect_color"/>
             <remap from = "get_first_pose"             to = "orb_slam3_ros/get_first_pose"/>
@@ -112,7 +113,7 @@
             <param name = "cam_frame_id"               type = "string"   value = "$(arg robot_name)/stereo_down/left_optical" />
             <param name = "enable_pangolin"            type = "bool"     value = "true" />
         </node>
-        <node name = "orb_slam3" pkg = "orb_slam3_ros" type = "ros_stereo" output = "screen" if = "$(eval enable_decimate_x2 == true)">
+        <node name = "orb_slam3_ros" pkg = "orb_slam3_ros" type = "ros_stereo" output = "screen" if = "$(eval enable_decimate_x2 == true)">
             <remap from = "/camera/left/image_raw"     to = "$(arg camera_name)/scaled_x2/$(arg master_camera_name)/image_rect_color"/>
             <remap from = "/camera/right/image_raw"    to = "$(arg camera_name)/scaled_x2/$(arg slave_camera_name)/image_rect_color"/>
             <remap from = "get_first_pose"             to = "orb_slam3_ros/get_first_pose"/>
@@ -123,7 +124,7 @@
             <param name = "cam_frame_id"               type = "string"   value = "$(arg robot_name)/stereo_down/left_optical" />
             <param name = "enable_pangolin"            type = "bool"     value = "true" />
         </node>
-        <node name = "orb_slam3" pkg = "orb_slam3_ros" type = "ros_stereo" output = "screen" if = "$(eval enable_decimate_x4 == true)">
+        <node name = "orb_slam3_ros" pkg = "orb_slam3_ros" type = "ros_stereo" output = "screen" if = "$(eval enable_decimate_x4 == true)">
             <remap from = "/camera/left/image_raw"     to = "$(arg camera_name)/scaled_x4/$(arg master_camera_name)/image_rect_color"/>
             <remap from = "/camera/right/image_raw"    to = "$(arg camera_name)/scaled_x4/$(arg slave_camera_name)/image_rect_color"/>
             <remap from = "get_first_pose"             to = "orb_slam3_ros/get_first_pose"/>
@@ -140,7 +141,7 @@
     <!-- Extend clok -->
     <node pkg = "orb_slam3_ros" type = "clock_extender" name = "clock_extender" required = "true" output = "screen" if = "$(eval enable_extra_clock == true)">
         <param name = "extra_time"       value = "5"/>
-        <param name = "gap_threshold"    value = "30"/>
+        <param name = "gap_threshold"    value = "15"/>
         <param name = "watch_interval"   value = "5"/>
     </node>
 
@@ -151,7 +152,7 @@
     <node pkg = "orb_slam3_ros" 
           type = "delayed_rosbag_play.sh" 
           name = "rosbag" 
-          args = "--delay 20 --rosbag-args '-r 1 --clock $(arg bagfile) --topics /$(arg robot_name)/$(arg camera_name)/$(arg master_camera_name)/camera_info 
+          args = "--delay 10 --rosbag-args '-r 1 --clock $(arg bagfile) --topics /$(arg robot_name)/$(arg camera_name)/$(arg master_camera_name)/camera_info 
                                                                                  /$(arg robot_name)/$(arg camera_name)/$(arg master_camera_name)/image_raw 
                                                                                  /$(arg robot_name)/$(arg camera_name)/$(arg slave_camera_name)/camera_info 
                                                                                  /$(arg robot_name)/$(arg camera_name)/$(arg slave_camera_name)/image_raw
@@ -161,7 +162,7 @@
     <node pkg = "orb_slam3_ros" 
           type = "delayed_rosbag_play.sh" 
           name = "rosbag" 
-          args = "--delay 20 --rosbag-args '-r 1 --clock $(arg bagfile) --topics /$(arg robot_name)/$(arg camera_name)/$(arg master_camera_name)/camera_info 
+          args = "--delay 10 --rosbag-args '-r 1 --clock $(arg bagfile) --topics /$(arg robot_name)/$(arg camera_name)/$(arg master_camera_name)/camera_info 
                                                                                  /$(arg robot_name)/$(arg camera_name)/$(arg master_camera_name)/image_raw 
                                                                                  /$(arg robot_name)/$(arg camera_name)/$(arg slave_camera_name)/camera_info 
                                                                                  /$(arg robot_name)/$(arg camera_name)/$(arg slave_camera_name)/image_raw
