@@ -11,14 +11,16 @@ using namespace std;
 class ImageGrabber
 {
 public:
-    ImageGrabber(): initialised_{false}, tf_listener_{tf_buffer_} {};
+    ImageGrabber(const string& working_path): img_count_{0}, initialised_{false}, working_path_{working_path}, tf_listener_{tf_buffer_} {};
 
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const sensor_msgs::ImageConstPtr& msgRight);
 
     void TimerCallback(const ros::WallTimerEvent& event);
 
 private:
+    int img_count_;
     bool initialised_;
+    string working_path_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
 
@@ -58,8 +60,9 @@ int main(int argc, char **argv)
     node_handler.param<std::string>(node_name + "/cam_frame_id", cam_frame_id, "camera");
     if (working_path[-1] != '/')
         working_path += "/";
-    keyframes_poses_file = working_path + "keyframes_poses.txt";
-    loop_closure_edges_file = working_path + "loop_closure_edges.txt";
+    ROS_INFO_STREAM(working_path);
+    keyframes_poses_file = working_path + "KeyframesPoses.txt";
+    loop_closure_edges_file = working_path + "LoopClosureEdges.txt";
 
     bool enable_pangolin;
     node_handler.param<bool>(node_name + "/enable_pangolin", enable_pangolin, true);
@@ -68,7 +71,7 @@ int main(int argc, char **argv)
     sensor_type = ORB_SLAM3::System::STEREO;
     pSLAM = new ORB_SLAM3::System(voc_file, settings_file, sensor_type, enable_pangolin);
 
-    ImageGrabber igb;
+    ImageGrabber igb(working_path);
 
     initial_pose_client = node_handler.serviceClient<orb_slam3_ros::GetTransform>("get_first_pose");
     message_filters::Subscriber<sensor_msgs::Image> sub_img_left(node_handler, "/camera/left/image_raw", 1);
@@ -181,7 +184,19 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft, const s
     publish_topics(msg_time);
 
     pSLAM->SaveKeyFrameTrajectoryCustom(keyframes_poses_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
-    pSLAM->SaveLoopAndMergeEdgesCustom(loop_closure_edges_file, tfTransform_to_SE3f(robot2camera), tfTransform_to_SE3f(world2initial));
+    
+    img_count_++;
+    ofstream f;
+    f.open(working_path_ + "img_counter.txt", std::ios::app);
+    if (f.is_open())
+    {
+        f << img_count_ << endl;
+        f.close();
+    }
+    else
+    {
+        ROS_WARN_STREAM("Impossible to open " << working_path_ + "img_counter.txt");
+    }
 
     timer.start();
 }

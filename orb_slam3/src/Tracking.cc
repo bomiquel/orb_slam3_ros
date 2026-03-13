@@ -313,6 +313,10 @@ void Tracking::TrackStats2File(const string& working_path)
     f << fixed << "#LCs," << endl;
     f << loop_closure_num << "," << endl;
     f.close();
+    f.open(working_path + "MapsNum.txt");
+    f << fixed << "#Maps," << endl;
+    f << vpMaps.size() << "," << endl;
+    f.close();
 
     f.open(working_path + "TrackingTimeStats.txt");
     f << fixed << setprecision(6);
